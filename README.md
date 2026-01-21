@@ -16,10 +16,9 @@ A lightweight task tracker designed for AI agent coordination. Provides atomic t
 ```bash
 # Build from source
 go build -o airyra ./cmd/airyra
-go build -o ar ./cmd/ar
 
-# Move binaries to PATH
-mv airyra ar /usr/local/bin/
+# Move binary to PATH
+sudo mv airyra /usr/local/bin/
 ```
 
 ## Getting Started
@@ -29,13 +28,13 @@ mv airyra ar /usr/local/bin/
 Airyra requires a running server. Start it with:
 
 ```bash
-ar server start
+airyra server start
 ```
 
 The server runs on `localhost:7432` by default. Check status with:
 
 ```bash
-ar server status
+airyra server status
 ```
 
 ### 2. Initialize a project
@@ -43,7 +42,7 @@ ar server status
 In your project directory, create a configuration file:
 
 ```bash
-ar init my-project
+airyra init my-project
 ```
 
 This creates `airyra.toml`:
@@ -56,38 +55,38 @@ project = "my-project"
 
 ```bash
 # Create a simple task
-ar create "Implement user authentication"
+airyra create "Implement user authentication"
 
 # Create a high-priority task
-ar create "Fix critical bug" -p high
+airyra create "Fix critical bug" -p high
 
 # Create a task with description
-ar create "Add unit tests" -d "Cover all edge cases"
+airyra create "Add unit tests" -d "Cover all edge cases"
 
 # Create a subtask
-ar create "Write login endpoint" --parent ar-a1b2
+airyra create "Write login endpoint" --parent ar-a1b2
 ```
 
 ### 4. Work on tasks
 
 ```bash
 # See what's ready to work on
-ar ready
+airyra ready
 
 # Get the highest-priority task
-ar next
+airyra next
 
 # Claim a task (atomic - prevents others from claiming it)
-ar claim ar-a1b2
+airyra claim ar-a1b2
 
 # Mark it done when finished
-ar done ar-a1b2
+airyra done ar-a1b2
 ```
 
 ### 5. Stop the server
 
 ```bash
-ar server stop
+airyra server stop
 ```
 
 ## CLI Reference
@@ -95,71 +94,71 @@ ar server stop
 ### Server Management
 
 ```bash
-ar server start              # Start the server
-ar server stop               # Stop the server
-ar server status             # Check if server is running
+airyra server start          # Start the server
+airyra server stop           # Stop the server
+airyra server status         # Check if server is running
 ```
 
 ### Project Setup
 
 ```bash
-ar init <name>               # Create airyra.toml in current directory
+airyra init <name>           # Create airyra.toml in current directory
 ```
 
 ### Task Management
 
 ```bash
-ar create <title>            # Create a new task
+airyra create <title>        # Create a new task
   -p, --priority <level>     #   Priority: 0-4 or critical/high/normal/low/lowest
   -d, --description <text>   #   Task description
   --parent <id>              #   Parent task ID
 
-ar list                      # List all tasks
+airyra list                  # List all tasks
   --status <status>          #   Filter: open, in_progress, blocked, done
   --page <n>                 #   Page number (default: 1)
   --per-page <n>             #   Items per page (default: 50)
 
-ar show <id>                 # Show task details
+airyra show <id>             # Show task details
 
-ar edit <id>                 # Edit a task
+airyra edit <id>             # Edit a task
   -t, --title <text>         #   New title
   -d, --description <text>   #   New description
   -p, --priority <level>     #   New priority
 
-ar delete <id>               # Delete a task
+airyra delete <id>           # Delete a task
 ```
 
 ### Status Transitions
 
 ```bash
-ar claim <id>                # Claim task (open → in_progress)
-ar done <id>                 # Complete task (in_progress → done)
-ar release <id>              # Release task (in_progress → open)
+airyra claim <id>            # Claim task (open → in_progress)
+airyra done <id>             # Complete task (in_progress → done)
+airyra release <id>          # Release task (in_progress → open)
   --force                    #   Release task claimed by another agent
-ar block <id>                # Block task (→ blocked)
-ar unblock <id>              # Unblock task (blocked → open)
+airyra block <id>            # Block task (→ blocked)
+airyra unblock <id>          # Unblock task (blocked → open)
 ```
 
 ### Dependencies
 
 ```bash
-ar dep add <child> <parent>  # Add dependency (child depends on parent)
-ar dep rm <child> <parent>   # Remove dependency
-ar dep list <id>             # List task's dependencies
+airyra dep add <child> <parent>  # Add dependency (child depends on parent)
+airyra dep rm <child> <parent>   # Remove dependency
+airyra dep list <id>             # List task's dependencies
 ```
 
 ### Ready Queue
 
 ```bash
-ar ready                     # List all ready tasks
-ar next                      # Get highest-priority ready task
+airyra ready                 # List all ready tasks
+airyra next                  # Get highest-priority ready task
 ```
 
 ### History
 
 ```bash
-ar history <id>              # Show task's change history
-ar log                       # Show recent activity
+airyra history <id>          # Show task's change history
+airyra log                   # Show recent activity
 ```
 
 ### Output Format
@@ -167,9 +166,9 @@ ar log                       # Show recent activity
 Add `--json` to any command for machine-readable output:
 
 ```bash
-ar list --json
-ar show ar-a1b2 --json
-ar ready --json
+airyra list --json
+airyra show ar-a1b2 --json
+airyra ready --json
 ```
 
 ## Task States
@@ -212,9 +211,9 @@ Airyra is designed for AI agent coordination. Key patterns:
 
 ```bash
 # Always claim before starting work
-ar claim ar-a1b2
+airyra claim ar-a1b2
 # ... do work ...
-ar done ar-a1b2
+airyra done ar-a1b2
 ```
 
 If another agent already claimed the task, you'll get an error:
@@ -226,7 +225,7 @@ Error: task already claimed by agent-x at 2024-01-15T10:30:00Z
 ### Use JSON output
 
 ```bash
-ar ready --json | jq '.data[0].id'
+airyra ready --json | jq '.data[0].id'
 ```
 
 ### Agent identification

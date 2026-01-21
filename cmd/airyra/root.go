@@ -7,9 +7,9 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "ar",
-	Short: "Airyra task tracker CLI",
-	Long:  `A CLI for the Airyra distributed task tracking system.`,
+	Use:   "airyra",
+	Short: "Airyra task tracker",
+	Long:  `A task tracker for AI agent coordination with atomic task claiming.`,
 }
 
 // Global flags
