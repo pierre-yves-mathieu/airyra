@@ -219,7 +219,7 @@ func TestE2E_TableOutput_Show(t *testing.T) {
 
 	// Create a task with description
 	c := suite.getClient(projectName, "test-agent")
-	task, _ := c.CreateTask(t.Context(), "Detailed Task", "This is a description", 1, "")
+	task, _ := c.CreateTask(t.Context(), "Detailed Task", "This is a description", 1, "", "")
 
 	// Run ar show (no --json)
 	stdout, stderr, exitCode := suite.runCLIInDir(projectDir, "show", task.ID)

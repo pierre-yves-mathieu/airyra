@@ -33,12 +33,12 @@ func TestRunMigrations_FreshDatabase(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to get version: %v", err)
 	}
-	if version != 1 {
-		t.Errorf("expected version 1, got %d", version)
+	if version != 2 {
+		t.Errorf("expected version 2, got %d", version)
 	}
 
 	// Verify tables were created
-	tables := []string{"tasks", "dependencies", "audit_log", "_migrations"}
+	tables := []string{"tasks", "dependencies", "audit_log", "_migrations", "specs", "spec_dependencies"}
 	for _, table := range tables {
 		var name string
 		err := db.QueryRow(`
@@ -66,13 +66,13 @@ func TestRunMigrations_Idempotent(t *testing.T) {
 		t.Fatalf("second migration run failed: %v", err)
 	}
 
-	// Verify version is still 1
+	// Verify version is still 2
 	version, err := GetCurrentVersion(db)
 	if err != nil {
 		t.Fatalf("failed to get version: %v", err)
 	}
-	if version != 1 {
-		t.Errorf("expected version 1, got %d", version)
+	if version != 2 {
+		t.Errorf("expected version 2, got %d", version)
 	}
 }
 
@@ -100,8 +100,8 @@ func TestGetCurrentVersion_AfterMigration(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected no error, got: %v", err)
 	}
-	if version != 1 {
-		t.Errorf("expected version 1, got %d", version)
+	if version != 2 {
+		t.Errorf("expected version 2, got %d", version)
 	}
 }
 

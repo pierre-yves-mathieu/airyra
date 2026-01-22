@@ -117,7 +117,7 @@ type AuditQueryOptions struct {
 }
 
 // Store is the main interface for accessing all repositories.
-// It provides access to task, dependency, and audit repositories,
+// It provides access to task, dependency, spec, and audit repositories,
 // and supports transactional operations.
 type Store interface {
 	// Tasks returns the TaskRepository for task operations.
@@ -125,6 +125,12 @@ type Store interface {
 
 	// Dependencies returns the DependencyRepository for dependency operations.
 	Dependencies() DependencyRepository
+
+	// Specs returns the SpecRepository for spec operations.
+	Specs() SpecRepository
+
+	// SpecDependencies returns the SpecDependencyRepository for spec dependency operations.
+	SpecDependencies() SpecDependencyRepository
 
 	// AuditLogs returns the AuditRepository for audit log operations.
 	AuditLogs() AuditRepository
@@ -146,6 +152,12 @@ type TxStore interface {
 
 	// Dependencies returns the DependencyRepository for dependency operations within the transaction.
 	Dependencies() DependencyRepository
+
+	// Specs returns the SpecRepository for spec operations within the transaction.
+	Specs() SpecRepository
+
+	// SpecDependencies returns the SpecDependencyRepository for spec dependency operations within the transaction.
+	SpecDependencies() SpecDependencyRepository
 
 	// AuditLogs returns the AuditRepository for audit log operations within the transaction.
 	AuditLogs() AuditRepository
@@ -235,4 +247,75 @@ type AuditRepository interface {
 
 	// Query returns audit entries matching the specified options, ordered by timestamp descending.
 	Query(ctx context.Context, opts AuditQueryOptions) ([]*AuditEntry, error)
+}
+
+// SpecListOptions specifies filtering and pagination options for listing specs.
+type SpecListOptions struct {
+	Status  *string
+	Page    int
+	PerPage int
+}
+
+// Normalize ensures SpecListOptions has valid default values.
+func (o *SpecListOptions) Normalize() {
+	if o.Page < 1 {
+		o.Page = 1
+	}
+	if o.PerPage < 1 {
+		o.PerPage = 50
+	}
+	if o.PerPage > 100 {
+		o.PerPage = 100
+	}
+}
+
+// SpecRepository defines operations for managing specs.
+type SpecRepository interface {
+	// Create inserts a new spec into the store.
+	Create(ctx context.Context, spec *Spec) error
+
+	// Get retrieves a spec by its ID with computed task counts.
+	// Returns ErrNotFound if the spec does not exist.
+	Get(ctx context.Context, id string) (*Spec, error)
+
+	// List returns specs matching the specified options.
+	// Returns the matching specs, total count of matching specs, and any error.
+	List(ctx context.Context, opts SpecListOptions) ([]*Spec, int, error)
+
+	// ListReady returns specs that have no unmet dependencies and are ready to be worked on.
+	// A spec is ready if all its parent dependencies are done.
+	// Returns the matching specs, total count of matching specs, and any error.
+	ListReady(ctx context.Context, opts SpecListOptions) ([]*Spec, int, error)
+
+	// ListTasks returns tasks belonging to a spec.
+	// Returns the matching tasks, total count of matching tasks, and any error.
+	ListTasks(ctx context.Context, specID string, opts ListOptions) ([]*Task, int, error)
+
+	// Update modifies an existing spec.
+	// Returns ErrNotFound if the spec does not exist.
+	Update(ctx context.Context, spec *Spec) error
+
+	// Delete removes a spec by its ID.
+	// Returns ErrNotFound if the spec does not exist.
+	Delete(ctx context.Context, id string) error
+}
+
+// SpecDependencyRepository defines operations for managing spec dependencies.
+type SpecDependencyRepository interface {
+	// Add creates a dependency relationship where childID depends on parentID.
+	// The child spec cannot be marked as ready until the parent spec is done.
+	// Returns ErrCycleDetected if adding this dependency would create a cycle.
+	Add(ctx context.Context, childID, parentID string) error
+
+	// Remove deletes a spec dependency relationship.
+	Remove(ctx context.Context, childID, parentID string) error
+
+	// ListForSpec returns all dependencies for a given spec.
+	// This includes both dependencies where the spec is the child (things it depends on)
+	// and where it is the parent (things that depend on it).
+	ListForSpec(ctx context.Context, specID string) ([]SpecDependency, error)
+
+	// CheckCycle determines if adding a dependency from childID to parentID would create a cycle.
+	// Returns hasCycle=true and the path if a cycle would be created.
+	CheckCycle(ctx context.Context, childID, parentID string) (hasCycle bool, path []string, err error)
 }

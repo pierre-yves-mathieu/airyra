@@ -26,6 +26,7 @@ func NewTaskService(taskRepo *sqlite.TaskRepository, auditRepo *sqlite.AuditRepo
 // CreateTaskInput contains the input for creating a task.
 type CreateTaskInput struct {
 	ParentID    *string
+	SpecID      *string
 	Title       string
 	Description *string
 	Priority    *int
@@ -47,6 +48,7 @@ func (s *TaskService) Create(input CreateTaskInput, agentID string) (*domain.Tas
 	task := &domain.Task{
 		ID:          id,
 		ParentID:    input.ParentID,
+		SpecID:      input.SpecID,
 		Title:       input.Title,
 		Description: input.Description,
 		Status:      domain.StatusOpen,

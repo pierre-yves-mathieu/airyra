@@ -153,7 +153,7 @@ func TestCreate_Success(t *testing.T) {
 
 	// Run create
 	var buf bytes.Buffer
-	task, err := c.CreateTask(context.Background(), "Test task", "", 2, "")
+	task, err := c.CreateTask(context.Background(), "Test task", "", 2, "", "")
 	if err != nil {
 		t.Fatalf("CreateTask failed: %v", err)
 	}

@@ -14,6 +14,7 @@ type CreateTaskRequest struct {
 	Description *string `json:"description,omitempty"`
 	Priority    *int    `json:"priority,omitempty"`
 	ParentID    *string `json:"parent_id,omitempty"`
+	SpecID      *string `json:"spec_id,omitempty"`
 }
 
 // Validate validates the create task request.

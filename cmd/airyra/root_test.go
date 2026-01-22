@@ -12,8 +12,8 @@ func TestRootCmd_Exists(t *testing.T) {
 }
 
 func TestRootCmd_Use(t *testing.T) {
-	if rootCmd.Use != "ar" {
-		t.Errorf("rootCmd.Use = %s, expected ar", rootCmd.Use)
+	if rootCmd.Use != "airyra" {
+		t.Errorf("rootCmd.Use = %s, expected airyra", rootCmd.Use)
 	}
 }
 

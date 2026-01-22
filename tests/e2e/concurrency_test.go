@@ -95,7 +95,7 @@ func TestE2E_ConcurrentTaskCreation(t *testing.T) {
 			c := suite.getClient(projectName, agentID)
 
 			title := taskTitleForNum(taskNum)
-			task, err := c.CreateTask(t.Context(), title, "", 2, "")
+			task, err := c.CreateTask(t.Context(), title, "", 2, "", "")
 
 			if err != nil {
 				errCh <- err
@@ -414,7 +414,7 @@ func TestE2E_ConcurrentReadsDuringWrites(t *testing.T) {
 			agentID := agentIDForNum(idx)
 			c := suite.getClient(projectName, agentID)
 
-			_, err := c.CreateTask(t.Context(), taskTitleForNum(numInitialTasks+idx), "", 2, "")
+			_, err := c.CreateTask(t.Context(), taskTitleForNum(numInitialTasks+idx), "", 2, "", "")
 			if err != nil {
 				atomic.AddInt32(&writeErrors, 1)
 			}
@@ -485,7 +485,7 @@ func TestE2E_ConcurrentProjectAccess(t *testing.T) {
 				agentID := agentIDForNum(op)
 				c := suite.getClient(projectName, agentID)
 
-				_, err := c.CreateTask(t.Context(), taskTitleForNum(op), "", 2, "")
+				_, err := c.CreateTask(t.Context(), taskTitleForNum(op), "", 2, "", "")
 				if err != nil {
 					atomic.AddInt32(&errCount, 1)
 					t.Logf("Error creating task in project %s: %v", projectName, err)

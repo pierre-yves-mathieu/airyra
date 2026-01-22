@@ -29,6 +29,7 @@ Priority can be specified as a number (0-4) or name:
 		priorityStr, _ := cmd.Flags().GetString("priority")
 		description, _ := cmd.Flags().GetString("description")
 		parentID, _ := cmd.Flags().GetString("parent")
+		specID, _ := cmd.Flags().GetString("spec")
 
 		priority := 2 // default
 		if priorityStr != "" {
@@ -44,7 +45,7 @@ Priority can be specified as a number (0-4) or name:
 			handleError(err)
 		}
 
-		task, err := c.CreateTask(context.Background(), args[0], description, priority, parentID)
+		task, err := c.CreateTask(context.Background(), args[0], description, priority, parentID, specID)
 		if err != nil {
 			handleError(err)
 		}
@@ -167,6 +168,7 @@ func init() {
 	createCmd.Flags().StringP("priority", "p", "", "Task priority (0-4 or critical/high/normal/low/lowest)")
 	createCmd.Flags().StringP("description", "d", "", "Task description")
 	createCmd.Flags().String("parent", "", "Parent task ID")
+	createCmd.Flags().String("spec", "", "Spec ID to assign task to")
 
 	// List command flags
 	listCmd.Flags().String("status", "", "Filter by status (open, in_progress, blocked, done)")

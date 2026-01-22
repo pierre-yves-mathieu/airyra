@@ -20,8 +20,8 @@ func NewTaskRepository(db *sql.DB) *TaskRepository {
 // Create creates a new task.
 func (r *TaskRepository) Create(task *domain.Task) error {
 	query := `
-		INSERT INTO tasks (id, parent_id, title, description, status, priority, claimed_by, claimed_at, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		INSERT INTO tasks (id, parent_id, spec_id, title, description, status, priority, claimed_by, claimed_at, created_at, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 	var claimedAt *string
 	if task.ClaimedAt != nil {
@@ -32,6 +32,7 @@ func (r *TaskRepository) Create(task *domain.Task) error {
 	_, err := r.db.Exec(query,
 		task.ID,
 		task.ParentID,
+		task.SpecID,
 		task.Title,
 		task.Description,
 		string(task.Status),
@@ -47,7 +48,7 @@ func (r *TaskRepository) Create(task *domain.Task) error {
 // GetByID retrieves a task by its ID.
 func (r *TaskRepository) GetByID(id string) (*domain.Task, error) {
 	query := `
-		SELECT id, parent_id, title, description, status, priority, claimed_by, claimed_at, created_at, updated_at
+		SELECT id, parent_id, spec_id, title, description, status, priority, claimed_by, claimed_at, created_at, updated_at
 		FROM tasks WHERE id = ?
 	`
 	row := r.db.QueryRow(query, id)
@@ -73,7 +74,7 @@ func (r *TaskRepository) List(status *domain.TaskStatus, page, perPage int) ([]*
 
 	// Fetch tasks
 	query := `
-		SELECT id, parent_id, title, description, status, priority, claimed_by, claimed_at, created_at, updated_at
+		SELECT id, parent_id, spec_id, title, description, status, priority, claimed_by, claimed_at, created_at, updated_at
 		FROM tasks
 	`
 	if status != nil {
@@ -124,7 +125,7 @@ func (r *TaskRepository) ListReady(page, perPage int) ([]*domain.Task, int, erro
 
 	// Fetch ready tasks
 	query := `
-		SELECT t.id, t.parent_id, t.title, t.description, t.status, t.priority, t.claimed_by, t.claimed_at, t.created_at, t.updated_at
+		SELECT t.id, t.parent_id, t.spec_id, t.title, t.description, t.status, t.priority, t.claimed_by, t.claimed_at, t.created_at, t.updated_at
 		FROM tasks t
 		WHERE t.status = 'open'
 		AND NOT EXISTS (
@@ -158,7 +159,7 @@ func (r *TaskRepository) ListReady(page, perPage int) ([]*domain.Task, int, erro
 func (r *TaskRepository) Update(task *domain.Task) error {
 	query := `
 		UPDATE tasks
-		SET parent_id = ?, title = ?, description = ?, status = ?, priority = ?, claimed_by = ?, claimed_at = ?, updated_at = ?
+		SET parent_id = ?, spec_id = ?, title = ?, description = ?, status = ?, priority = ?, claimed_by = ?, claimed_at = ?, updated_at = ?
 		WHERE id = ?
 	`
 	var claimedAt *string
@@ -169,6 +170,7 @@ func (r *TaskRepository) Update(task *domain.Task) error {
 
 	result, err := r.db.Exec(query,
 		task.ParentID,
+		task.SpecID,
 		task.Title,
 		task.Description,
 		string(task.Status),
@@ -240,13 +242,14 @@ func (r *TaskRepository) AtomicClaim(taskID, agentID string, now time.Time) (*do
 
 func (r *TaskRepository) scanTask(row *sql.Row) (*domain.Task, error) {
 	var task domain.Task
-	var parentID, description, claimedBy, claimedAt sql.NullString
+	var parentID, specID, description, claimedBy, claimedAt sql.NullString
 	var status string
 	var createdAt, updatedAt string
 
 	err := row.Scan(
 		&task.ID,
 		&parentID,
+		&specID,
 		&task.Title,
 		&description,
 		&status,
@@ -267,6 +270,9 @@ func (r *TaskRepository) scanTask(row *sql.Row) (*domain.Task, error) {
 	if parentID.Valid {
 		task.ParentID = &parentID.String
 	}
+	if specID.Valid {
+		task.SpecID = &specID.String
+	}
 	if description.Valid {
 		task.Description = &description.String
 	}
@@ -285,13 +291,14 @@ func (r *TaskRepository) scanTask(row *sql.Row) (*domain.Task, error) {
 
 func (r *TaskRepository) scanTaskRows(rows *sql.Rows) (*domain.Task, error) {
 	var task domain.Task
-	var parentID, description, claimedBy, claimedAt sql.NullString
+	var parentID, specID, description, claimedBy, claimedAt sql.NullString
 	var status string
 	var createdAt, updatedAt string
 
 	err := rows.Scan(
 		&task.ID,
 		&parentID,
+		&specID,
 		&task.Title,
 		&description,
 		&status,
@@ -308,6 +315,9 @@ func (r *TaskRepository) scanTaskRows(rows *sql.Rows) (*domain.Task, error) {
 	task.Status = domain.TaskStatus(status)
 	if parentID.Valid {
 		task.ParentID = &parentID.String
+	}
+	if specID.Valid {
+		task.SpecID = &specID.String
 	}
 	if description.Valid {
 		task.Description = &description.String

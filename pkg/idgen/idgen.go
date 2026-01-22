@@ -30,3 +30,21 @@ func MustGenerate() string {
 	}
 	return id
 }
+
+// GenerateWithPrefix creates a new unique ID with a custom prefix in the format "prefix-xxxx".
+func GenerateWithPrefix(prefix string) (string, error) {
+	bytes := make([]byte, IDLength/2)
+	if _, err := rand.Read(bytes); err != nil {
+		return "", fmt.Errorf("failed to generate ID: %w", err)
+	}
+	return fmt.Sprintf("%s-%s", prefix, hex.EncodeToString(bytes)), nil
+}
+
+// MustGenerateWithPrefix creates a new unique ID with a custom prefix, panicking on error.
+func MustGenerateWithPrefix(prefix string) string {
+	id, err := GenerateWithPrefix(prefix)
+	if err != nil {
+		panic(err)
+	}
+	return id
+}

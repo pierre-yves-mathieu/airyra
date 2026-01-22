@@ -6,15 +6,19 @@ import "fmt"
 type ErrorCode string
 
 const (
-	ErrCodeTaskNotFound       ErrorCode = "TASK_NOT_FOUND"
-	ErrCodeAlreadyClaimed     ErrorCode = "ALREADY_CLAIMED"
-	ErrCodeNotOwner           ErrorCode = "NOT_OWNER"
-	ErrCodeInvalidTransition  ErrorCode = "INVALID_TRANSITION"
-	ErrCodeValidationFailed   ErrorCode = "VALIDATION_FAILED"
-	ErrCodeCycleDetected      ErrorCode = "CYCLE_DETECTED"
-	ErrCodeInternalError      ErrorCode = "INTERNAL_ERROR"
-	ErrCodeProjectNotFound    ErrorCode = "PROJECT_NOT_FOUND"
-	ErrCodeDependencyNotFound ErrorCode = "DEPENDENCY_NOT_FOUND"
+	ErrCodeTaskNotFound           ErrorCode = "TASK_NOT_FOUND"
+	ErrCodeAlreadyClaimed         ErrorCode = "ALREADY_CLAIMED"
+	ErrCodeNotOwner               ErrorCode = "NOT_OWNER"
+	ErrCodeInvalidTransition      ErrorCode = "INVALID_TRANSITION"
+	ErrCodeValidationFailed       ErrorCode = "VALIDATION_FAILED"
+	ErrCodeCycleDetected          ErrorCode = "CYCLE_DETECTED"
+	ErrCodeInternalError          ErrorCode = "INTERNAL_ERROR"
+	ErrCodeProjectNotFound        ErrorCode = "PROJECT_NOT_FOUND"
+	ErrCodeDependencyNotFound     ErrorCode = "DEPENDENCY_NOT_FOUND"
+	ErrCodeSpecNotFound           ErrorCode = "SPEC_NOT_FOUND"
+	ErrCodeSpecAlreadyCancelled   ErrorCode = "SPEC_ALREADY_CANCELLED"
+	ErrCodeSpecNotCancelled       ErrorCode = "SPEC_NOT_CANCELLED"
+	ErrCodeSpecDepNotFound        ErrorCode = "SPEC_DEPENDENCY_NOT_FOUND"
 )
 
 // DomainError represents an error in the domain layer with context.
@@ -115,5 +119,44 @@ func NewInternalError(err error) *DomainError {
 		Code:    ErrCodeInternalError,
 		Message: "An internal error occurred",
 		Context: map[string]interface{}{},
+	}
+}
+
+// NewSpecNotFoundError creates a spec not found error.
+func NewSpecNotFoundError(specID string) *DomainError {
+	return &DomainError{
+		Code:    ErrCodeSpecNotFound,
+		Message: fmt.Sprintf("Spec %s not found", specID),
+		Context: map[string]interface{}{"id": specID},
+	}
+}
+
+// NewSpecAlreadyCancelledError creates a spec already cancelled error.
+func NewSpecAlreadyCancelledError(specID string) *DomainError {
+	return &DomainError{
+		Code:    ErrCodeSpecAlreadyCancelled,
+		Message: fmt.Sprintf("Spec %s is already cancelled", specID),
+		Context: map[string]interface{}{"id": specID},
+	}
+}
+
+// NewSpecNotCancelledError creates a spec not cancelled error.
+func NewSpecNotCancelledError(specID string) *DomainError {
+	return &DomainError{
+		Code:    ErrCodeSpecNotCancelled,
+		Message: fmt.Sprintf("Spec %s is not cancelled", specID),
+		Context: map[string]interface{}{"id": specID},
+	}
+}
+
+// NewSpecDependencyNotFoundError creates a spec dependency not found error.
+func NewSpecDependencyNotFoundError(childID, parentID string) *DomainError {
+	return &DomainError{
+		Code:    ErrCodeSpecDepNotFound,
+		Message: fmt.Sprintf("Spec dependency from %s to %s not found", childID, parentID),
+		Context: map[string]interface{}{
+			"child_id":  childID,
+			"parent_id": parentID,
+		},
 	}
 }

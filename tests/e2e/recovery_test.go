@@ -52,13 +52,13 @@ func TestE2E_ServerRestart(t *testing.T) {
 		c := newTestClient(host, port, projectName, "test-agent")
 
 		// Create tasks
-		task1, err := c.CreateTask(context.Background(), "Persistent Task 1", "Description 1", 1, "")
+		task1, err := c.CreateTask(context.Background(), "Persistent Task 1", "Description 1", 1, "", "")
 		if err != nil {
 			t.Fatalf("Failed to create task 1: %v", err)
 		}
 		taskID1 = task1.ID
 
-		task2, err := c.CreateTask(context.Background(), "Persistent Task 2", "", 2, "")
+		task2, err := c.CreateTask(context.Background(), "Persistent Task 2", "", 2, "", "")
 		if err != nil {
 			t.Fatalf("Failed to create task 2: %v", err)
 		}
@@ -174,11 +174,11 @@ func TestE2E_ServerRestart_Dependencies(t *testing.T) {
 		c := newTestClient(parts[0], port, projectName, "test-agent")
 
 		// Create tasks
-		task, _ := c.CreateTask(context.Background(), "Task A", "", 2, "")
+		task, _ := c.CreateTask(context.Background(), "Task A", "", 2, "", "")
 		taskA = task.ID
-		task, _ = c.CreateTask(context.Background(), "Task B", "", 2, "")
+		task, _ = c.CreateTask(context.Background(), "Task B", "", 2, "", "")
 		taskB = task.ID
-		task, _ = c.CreateTask(context.Background(), "Task C", "", 2, "")
+		task, _ = c.CreateTask(context.Background(), "Task C", "", 2, "", "")
 		taskC = task.ID
 
 		// Create dependencies: B depends on A, C depends on B
@@ -282,7 +282,7 @@ func TestE2E_ServerRestart_AuditHistory(t *testing.T) {
 		c := newTestClient(parts[0], port, projectName, "test-agent")
 
 		// Create task
-		task, err := c.CreateTask(context.Background(), "Audited Task", "", 2, "")
+		task, err := c.CreateTask(context.Background(), "Audited Task", "", 2, "", "")
 		if err != nil {
 			t.Fatalf("Failed to create task: %v", err)
 		}

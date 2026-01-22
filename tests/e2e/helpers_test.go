@@ -119,13 +119,13 @@ port = %s
 	return projectDir
 }
 
-// runCLI executes the ar CLI command with the given arguments and returns stdout, stderr, and exit code.
+// runCLI executes the airyra CLI command with the given arguments and returns stdout, stderr, and exit code.
 // The command is run in the context of a project directory.
 func (s *E2ETestSuite) runCLI(args ...string) (stdout, stderr string, exitCode int) {
 	return s.runCLIInDir(s.projectDir, args...)
 }
 
-// runCLIInDir executes the ar CLI command in the specified directory.
+// runCLIInDir executes the airyra CLI command in the specified directory.
 func (s *E2ETestSuite) runCLIInDir(dir string, args ...string) (stdout, stderr string, exitCode int) {
 	s.t.Helper()
 
@@ -155,12 +155,12 @@ func (s *E2ETestSuite) runCLIInDir(dir string, args ...string) (stdout, stderr s
 	return stdout, stderr, exitCode
 }
 
-// buildCLI compiles the ar CLI binary and returns its path.
+// buildCLI compiles the airyra CLI binary and returns its path.
 // It caches the binary to avoid rebuilding for each test.
 func (s *E2ETestSuite) buildCLI() string {
 	s.t.Helper()
 
-	binPath := filepath.Join(s.tempDir, "ar")
+	binPath := filepath.Join(s.tempDir, "airyra")
 
 	// Check if binary already exists
 	if _, err := os.Stat(binPath); err == nil {
@@ -171,7 +171,7 @@ func (s *E2ETestSuite) buildCLI() string {
 	projectRoot := findProjectRoot()
 
 	// Build the CLI from the project root
-	cmd := exec.Command("go", "build", "-o", binPath, "./cmd/ar")
+	cmd := exec.Command("go", "build", "-o", binPath, "./cmd/airyra")
 	cmd.Dir = projectRoot
 
 	var stderr bytes.Buffer
@@ -212,7 +212,7 @@ func (s *E2ETestSuite) createTask(projectName, title string) string {
 	s.t.Helper()
 
 	c := s.getClient(projectName, "test-agent")
-	task, err := c.CreateTask(context.Background(), title, "", 2, "")
+	task, err := c.CreateTask(context.Background(), title, "", 2, "", "")
 	if err != nil {
 		s.t.Fatalf("Failed to create task: %v", err)
 	}
@@ -225,7 +225,7 @@ func (s *E2ETestSuite) createTaskWithPriority(projectName, title string, priorit
 	s.t.Helper()
 
 	c := s.getClient(projectName, "test-agent")
-	task, err := c.CreateTask(context.Background(), title, "", priority, "")
+	task, err := c.CreateTask(context.Background(), title, "", priority, "", "")
 	if err != nil {
 		s.t.Fatalf("Failed to create task: %v", err)
 	}

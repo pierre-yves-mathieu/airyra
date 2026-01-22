@@ -10,6 +10,7 @@ import (
 type Task struct {
 	ID          string     // ar-xxxx format
 	ParentID    *string    // optional, for hierarchy
+	SpecID      *string    // optional, for spec grouping
 	Title       string     // required
 	Description *string    // optional
 	Status      string     // open/in_progress/blocked/done
@@ -37,6 +38,25 @@ type AuditEntry struct {
 	NewValue  *string   // JSON representation of new value (optional)
 	ChangedAt time.Time // when the change occurred
 	ChangedBy string    // who made the change (agent ID or system)
+}
+
+// Spec represents an epic-like entity for grouping related tasks.
+type Spec struct {
+	ID           string    // sp-xxxx format
+	Title        string    // required
+	Description  *string   // optional
+	ManualStatus *string   // only "cancelled" or nil
+	TaskCount    int       // computed: count of tasks in this spec
+	DoneCount    int       // computed: count of done tasks in this spec
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
+}
+
+// SpecDependency represents a dependency between specs.
+// ChildID is blocked by ParentID.
+type SpecDependency struct {
+	ChildID  string // the blocked spec
+	ParentID string // the blocking spec
 }
 
 // Status constants for Task
@@ -67,6 +87,51 @@ const (
 	ActionClaim   = "claim"
 	ActionRelease = "release"
 )
+
+// SpecStatus constants
+const (
+	SpecStatusDraft     = "draft"
+	SpecStatusActive    = "active"
+	SpecStatusDone      = "done"
+	SpecStatusCancelled = "cancelled"
+)
+
+// ValidSpecStatuses contains all valid spec statuses
+var ValidSpecStatuses = []string{
+	SpecStatusDraft,
+	SpecStatusActive,
+	SpecStatusDone,
+	SpecStatusCancelled,
+}
+
+// ComputeStatus calculates the spec status based on task counts and manual status.
+func (s *Spec) ComputeStatus() string {
+	if s.ManualStatus != nil && *s.ManualStatus == "cancelled" {
+		return SpecStatusCancelled
+	}
+	if s.TaskCount == 0 {
+		return SpecStatusDraft
+	}
+	if s.DoneCount == s.TaskCount {
+		return SpecStatusDone
+	}
+	return SpecStatusActive
+}
+
+// IsCancelled returns true if the spec is manually cancelled.
+func (s *Spec) IsCancelled() bool {
+	return s.ManualStatus != nil && *s.ManualStatus == "cancelled"
+}
+
+// IsValidSpecStatus checks if the given status is a valid spec status
+func IsValidSpecStatus(status string) bool {
+	for _, s := range ValidSpecStatuses {
+		if s == status {
+			return true
+		}
+	}
+	return false
+}
 
 // ValidStatuses contains all valid task statuses
 var ValidStatuses = []string{

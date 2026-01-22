@@ -42,6 +42,7 @@ func (s TaskStatus) IsValid() bool {
 type Task struct {
 	ID          string     `json:"id"`
 	ParentID    *string    `json:"parent_id,omitempty"`
+	SpecID      *string    `json:"spec_id,omitempty"`
 	Title       string     `json:"title"`
 	Description *string    `json:"description,omitempty"`
 	Status      TaskStatus `json:"status"`
@@ -86,4 +87,9 @@ func (t *Task) SetDescription(desc string) {
 // SetParentID sets the task's parent ID.
 func (t *Task) SetParentID(parentID string) {
 	t.ParentID = &parentID
+}
+
+// SetSpecID sets the task's spec ID.
+func (t *Task) SetSpecID(specID string) {
+	t.SpecID = &specID
 }

@@ -25,6 +25,7 @@ func NewRouter(manager *store.Manager) *chi.Mux {
 	transitionHandler := handler.NewTransitionHandler()
 	dependencyHandler := handler.NewDependencyHandler()
 	auditHandler := handler.NewAuditHandler()
+	specHandler := handler.NewSpecHandler()
 
 	// System routes (no project context needed)
 	r.Get("/v1/health", systemHandler.Health)
@@ -58,6 +59,26 @@ func NewRouter(manager *store.Manager) *chi.Mux {
 		// Audit
 		r.Get("/tasks/{id}/history", auditHandler.GetTaskHistory)
 		r.Get("/audit", auditHandler.QueryAuditLog)
+
+		// Specs CRUD
+		r.Get("/specs", specHandler.ListSpecs)
+		r.Post("/specs", specHandler.CreateSpec)
+		r.Get("/specs/ready", specHandler.ListReadySpecs)
+		r.Get("/specs/{id}", specHandler.GetSpec)
+		r.Patch("/specs/{id}", specHandler.UpdateSpec)
+		r.Delete("/specs/{id}", specHandler.DeleteSpec)
+
+		// Spec actions
+		r.Post("/specs/{id}/cancel", specHandler.CancelSpec)
+		r.Post("/specs/{id}/reopen", specHandler.ReopenSpec)
+
+		// Spec tasks
+		r.Get("/specs/{id}/tasks", specHandler.ListSpecTasks)
+
+		// Spec dependencies
+		r.Get("/specs/{id}/deps", specHandler.ListSpecDependencies)
+		r.Post("/specs/{id}/deps", specHandler.AddSpecDependency)
+		r.Delete("/specs/{id}/deps/{parentID}", specHandler.RemoveSpecDependency)
 	})
 
 	return r

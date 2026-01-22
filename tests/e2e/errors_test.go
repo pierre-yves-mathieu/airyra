@@ -12,7 +12,7 @@ import (
 	"github.com/airyra/airyra/internal/domain"
 )
 
-// Exit codes from cmd/ar/exitcodes.go
+// Exit codes from cmd/airyra/exitcodes.go
 const (
 	ExitSuccess              = 0
 	ExitGeneralError         = 1
@@ -51,15 +51,15 @@ port = 59999
 	}
 
 	// Build CLI from project root
-	binPath := filepath.Join(tempDir, "ar")
+	binPath := filepath.Join(tempDir, "airyra")
 	projectRoot := findProjectRoot()
-	buildCmd := exec.Command("go", "build", "-o", binPath, "./cmd/ar")
+	buildCmd := exec.Command("go", "build", "-o", binPath, "./cmd/airyra")
 	buildCmd.Dir = projectRoot
 	if out, err := buildCmd.CombinedOutput(); err != nil {
 		t.Fatalf("Failed to build CLI: %v\n%s", err, out)
 	}
 
-	// Run ar list without a server running
+	// Run airyra list without a server running
 	stdout, stderr, exitCode := runCLICommand(binPath, projectDir, "list")
 
 	// Verify exit code is ExitServerNotRunning (2)
@@ -87,7 +87,7 @@ func TestE2E_NoProjectConfig(t *testing.T) {
 		t.Fatalf("Failed to create empty dir: %v", err)
 	}
 
-	// Run ar list in directory without config
+	// Run airyra list in directory without config
 	stdout, stderr, exitCode := suite.runCLIInDir(emptyDir, "list")
 
 	// Verify exit code is ExitProjectNotConfigured (3)

@@ -43,6 +43,60 @@ type createTaskRequest struct {
 	Description *string `json:"description,omitempty"`
 	Priority    *int    `json:"priority,omitempty"`
 	ParentID    *string `json:"parent_id,omitempty"`
+	SpecID      *string `json:"spec_id,omitempty"`
+}
+
+// Spec represents an epic-like entity for grouping related tasks.
+type Spec struct {
+	ID          string  `json:"id"`
+	Title       string  `json:"title"`
+	Description *string `json:"description,omitempty"`
+	Status      string  `json:"status"`
+	TaskCount   int     `json:"task_count"`
+	DoneCount   int     `json:"done_count"`
+	CreatedAt   string  `json:"created_at"`
+	UpdatedAt   string  `json:"updated_at"`
+}
+
+// SpecListResponse represents a paginated list of specs.
+type SpecListResponse struct {
+	Data       []*Spec
+	Pagination *Pagination
+}
+
+// SpecUpdates contains optional fields for updating a spec.
+type SpecUpdates struct {
+	Title       *string
+	Description *string
+}
+
+// SpecDependency represents a dependency relationship between specs.
+type SpecDependency struct {
+	ChildID  string `json:"child_id"`
+	ParentID string `json:"parent_id"`
+}
+
+// paginatedSpecResponse is the raw JSON structure for paginated spec responses.
+type paginatedSpecResponse struct {
+	Data       []*Spec            `json:"data"`
+	Pagination paginationResponse `json:"pagination"`
+}
+
+// createSpecRequest is the JSON request body for creating a spec.
+type createSpecRequest struct {
+	Title       string  `json:"title"`
+	Description *string `json:"description,omitempty"`
+}
+
+// updateSpecRequest is the JSON request body for updating a spec.
+type updateSpecRequest struct {
+	Title       *string `json:"title,omitempty"`
+	Description *string `json:"description,omitempty"`
+}
+
+// addSpecDependencyRequest is the JSON request body for adding a spec dependency.
+type addSpecDependencyRequest struct {
+	ParentID string `json:"parent_id"`
 }
 
 // updateTaskRequest is the JSON request body for updating a task.

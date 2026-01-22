@@ -103,7 +103,7 @@ func TestClient_ContentType(t *testing.T) {
 	ctx := context.Background()
 
 	// Test POST (CreateTask)
-	_, _ = c.CreateTask(ctx, "Test", "Description", 2, "")
+	_, _ = c.CreateTask(ctx, "Test", "Description", 2, "", "")
 	if receivedMethod != http.MethodPost {
 		t.Errorf("expected POST method, got %s", receivedMethod)
 	}
@@ -253,7 +253,7 @@ func TestCreateTask_Success(t *testing.T) {
 	c := newTestClient(server, "test-project", "agent")
 	ctx := context.Background()
 
-	task, err := c.CreateTask(ctx, "New Task", "", 2, "")
+	task, err := c.CreateTask(ctx, "New Task", "", 2, "", "")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -286,7 +286,7 @@ func TestCreateTask_WithOptionalFields(t *testing.T) {
 	c := newTestClient(server, "test-project", "agent")
 	ctx := context.Background()
 
-	_, err := c.CreateTask(ctx, "Task", "A description", 1, "parent-123")
+	_, err := c.CreateTask(ctx, "Task", "A description", 1, "parent-123", "")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -324,7 +324,7 @@ func TestCreateTask_ValidationError(t *testing.T) {
 	c := newTestClient(server, "test-project", "agent")
 	ctx := context.Background()
 
-	_, err := c.CreateTask(ctx, "", "", 2, "")
+	_, err := c.CreateTask(ctx, "", "", 2, "", "")
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}

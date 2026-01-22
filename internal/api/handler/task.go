@@ -46,6 +46,7 @@ func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
 		Description: req.Description,
 		Priority:    req.Priority,
 		ParentID:    req.ParentID,
+		SpecID:      req.SpecID,
 	}, agentID)
 	if err != nil {
 		response.Error(w, err)

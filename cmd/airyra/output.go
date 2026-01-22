@@ -205,3 +205,93 @@ func truncate(s string, maxLen int) string {
 	}
 	return s[:maxLen-3] + "..."
 }
+
+// printSpec prints a single spec to the writer
+func printSpec(w io.Writer, spec *client.Spec, jsonOutput bool) {
+	if jsonOutput {
+		enc := json.NewEncoder(w)
+		enc.SetIndent("", "  ")
+		enc.Encode(spec)
+		return
+	}
+
+	// Table format
+	tw := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
+	fmt.Fprintf(tw, "ID:\t%s\n", spec.ID)
+	fmt.Fprintf(tw, "Title:\t%s\n", spec.Title)
+	fmt.Fprintf(tw, "Status:\t%s\n", spec.Status)
+	if spec.Description != nil && *spec.Description != "" {
+		fmt.Fprintf(tw, "Description:\t%s\n", *spec.Description)
+	}
+	fmt.Fprintf(tw, "Tasks:\t%d/%d done\n", spec.DoneCount, spec.TaskCount)
+	fmt.Fprintf(tw, "Created:\t%s\n", spec.CreatedAt)
+	fmt.Fprintf(tw, "Updated:\t%s\n", spec.UpdatedAt)
+	tw.Flush()
+}
+
+// printSpecList prints a list of specs with pagination info
+func printSpecList(w io.Writer, specs []*client.Spec, pagination *client.Pagination, jsonOutput bool) {
+	if jsonOutput {
+		enc := json.NewEncoder(w)
+		enc.SetIndent("", "  ")
+		enc.Encode(map[string]interface{}{
+			"data": specs,
+			"pagination": map[string]interface{}{
+				"page":        pagination.Page,
+				"per_page":    pagination.PerPage,
+				"total":       pagination.Total,
+				"total_pages": pagination.TotalPages,
+			},
+		})
+		return
+	}
+
+	if len(specs) == 0 {
+		fmt.Fprintln(w, "No specs found")
+		return
+	}
+
+	// Table format
+	tw := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
+	fmt.Fprintf(tw, "ID\tTITLE\tSTATUS\tPROGRESS\n")
+	fmt.Fprintf(tw, "--\t-----\t------\t--------\n")
+	for _, spec := range specs {
+		progress := fmt.Sprintf("%d/%d", spec.DoneCount, spec.TaskCount)
+		fmt.Fprintf(tw, "%s\t%s\t%s\t%s\n",
+			spec.ID, truncate(spec.Title, 40), spec.Status, progress)
+	}
+	tw.Flush()
+
+	// Pagination info
+	if pagination.TotalPages > 1 {
+		fmt.Fprintf(w, "\nPage %d of %d (%d total specs)\n",
+			pagination.Page, pagination.TotalPages, pagination.Total)
+	}
+}
+
+// printSpecDependencies prints spec dependencies
+func printSpecDependencies(w io.Writer, specID string, deps []client.SpecDependency, jsonOutput bool) {
+	if jsonOutput {
+		enc := json.NewEncoder(w)
+		enc.SetIndent("", "  ")
+		enc.Encode(deps)
+		return
+	}
+
+	if len(deps) == 0 {
+		fmt.Fprintf(w, "Spec %s has no dependencies\n", specID)
+		return
+	}
+
+	tw := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
+	fmt.Fprintf(tw, "TYPE\tSPEC ID\n")
+	fmt.Fprintf(tw, "----\t-------\n")
+	for _, dep := range deps {
+		if dep.ChildID == specID {
+			fmt.Fprintf(tw, "depends on\t%s\n", dep.ParentID)
+		} else if dep.ParentID == specID {
+			fmt.Fprintf(tw, "blocks\t%s\n", dep.ChildID)
+		}
+	}
+	tw.Flush()
+}

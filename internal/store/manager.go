@@ -15,10 +15,31 @@ const initialSchema = `
 -- Enable WAL mode for better concurrent read performance
 PRAGMA journal_mode=WAL;
 
+-- Specs table
+CREATE TABLE IF NOT EXISTS specs (
+    id            TEXT PRIMARY KEY,
+    title         TEXT NOT NULL,
+    description   TEXT,
+    manual_status TEXT CHECK (manual_status IS NULL OR manual_status = 'cancelled'),
+    created_at    TEXT NOT NULL,
+    updated_at    TEXT NOT NULL
+);
+
+-- Spec dependencies table
+CREATE TABLE IF NOT EXISTS spec_dependencies (
+    child_id  TEXT NOT NULL,
+    parent_id TEXT NOT NULL,
+    PRIMARY KEY (child_id, parent_id),
+    CHECK (child_id != parent_id),
+    FOREIGN KEY (child_id) REFERENCES specs(id) ON DELETE CASCADE,
+    FOREIGN KEY (parent_id) REFERENCES specs(id) ON DELETE CASCADE
+);
+
 -- Tasks table
 CREATE TABLE IF NOT EXISTS tasks (
     id          TEXT PRIMARY KEY,
     parent_id   TEXT REFERENCES tasks(id) ON DELETE CASCADE,
+    spec_id     TEXT REFERENCES specs(id) ON DELETE SET NULL,
     title       TEXT NOT NULL,
     description TEXT,
     status      TEXT NOT NULL DEFAULT 'open'
@@ -38,6 +59,9 @@ CREATE INDEX IF NOT EXISTS idx_tasks_priority ON tasks(priority);
 
 -- Index for finding subtasks
 CREATE INDEX IF NOT EXISTS idx_tasks_parent_id ON tasks(parent_id);
+
+-- Index for finding tasks in a spec
+CREATE INDEX IF NOT EXISTS idx_tasks_spec_id ON tasks(spec_id);
 
 -- Dependencies table (DAG edges)
 CREATE TABLE IF NOT EXISTS dependencies (

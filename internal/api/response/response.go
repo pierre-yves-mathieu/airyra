@@ -92,13 +92,15 @@ func NoContent(w http.ResponseWriter) {
 
 func mapErrorCodeToStatus(code domain.ErrorCode) int {
 	switch code {
-	case domain.ErrCodeTaskNotFound, domain.ErrCodeProjectNotFound, domain.ErrCodeDependencyNotFound:
+	case domain.ErrCodeTaskNotFound, domain.ErrCodeProjectNotFound, domain.ErrCodeDependencyNotFound,
+		domain.ErrCodeSpecNotFound, domain.ErrCodeSpecDepNotFound:
 		return http.StatusNotFound
-	case domain.ErrCodeAlreadyClaimed:
+	case domain.ErrCodeAlreadyClaimed, domain.ErrCodeSpecAlreadyCancelled:
 		return http.StatusConflict
 	case domain.ErrCodeNotOwner:
 		return http.StatusForbidden
-	case domain.ErrCodeInvalidTransition, domain.ErrCodeValidationFailed, domain.ErrCodeCycleDetected:
+	case domain.ErrCodeInvalidTransition, domain.ErrCodeValidationFailed, domain.ErrCodeCycleDetected,
+		domain.ErrCodeSpecNotCancelled:
 		return http.StatusBadRequest
 	case domain.ErrCodeInternalError:
 		return http.StatusInternalServerError

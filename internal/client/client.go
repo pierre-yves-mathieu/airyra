@@ -95,7 +95,7 @@ func (c *Client) ListProjects(ctx context.Context) ([]string, error) {
 // =============================================================================
 
 // CreateTask creates a new task.
-func (c *Client) CreateTask(ctx context.Context, title, description string, priority int, parentID string) (*domain.Task, error) {
+func (c *Client) CreateTask(ctx context.Context, title, description string, priority int, parentID, specID string) (*domain.Task, error) {
 	body := createTaskRequest{
 		Title: title,
 	}
@@ -105,6 +105,9 @@ func (c *Client) CreateTask(ctx context.Context, title, description string, prio
 	body.Priority = &priority
 	if parentID != "" {
 		body.ParentID = &parentID
+	}
+	if specID != "" {
+		body.SpecID = &specID
 	}
 
 	req, err := c.newJSONRequest(ctx, http.MethodPost, c.projectPath("/tasks"), body)
@@ -514,6 +517,398 @@ func (c *Client) GetTaskHistory(ctx context.Context, taskID string) ([]domain.Au
 }
 
 // =============================================================================
+// Specs
+// =============================================================================
+
+// CreateSpec creates a new spec.
+func (c *Client) CreateSpec(ctx context.Context, title, description string) (*Spec, error) {
+	body := createSpecRequest{
+		Title: title,
+	}
+	if description != "" {
+		body.Description = &description
+	}
+
+	req, err := c.newJSONRequest(ctx, http.MethodPost, c.projectPath("/specs"), body)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.http.Do(req)
+	if err != nil {
+		if isConnectionRefused(err) {
+			return nil, ErrServerNotRunning
+		}
+		return nil, fmt.Errorf("create spec failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusCreated {
+		return nil, parseErrorResponse(resp)
+	}
+
+	var spec Spec
+	if err := json.NewDecoder(resp.Body).Decode(&spec); err != nil {
+		return nil, fmt.Errorf("failed to decode spec response: %w", err)
+	}
+
+	return &spec, nil
+}
+
+// GetSpec retrieves a spec by ID.
+func (c *Client) GetSpec(ctx context.Context, id string) (*Spec, error) {
+	req, err := c.newRequest(ctx, http.MethodGet, c.projectPath("/specs/"+id), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.http.Do(req)
+	if err != nil {
+		if isConnectionRefused(err) {
+			return nil, ErrServerNotRunning
+		}
+		return nil, fmt.Errorf("get spec failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, parseErrorResponse(resp)
+	}
+
+	var spec Spec
+	if err := json.NewDecoder(resp.Body).Decode(&spec); err != nil {
+		return nil, fmt.Errorf("failed to decode spec response: %w", err)
+	}
+
+	return &spec, nil
+}
+
+// ListSpecs lists specs with optional filtering.
+func (c *Client) ListSpecs(ctx context.Context, status string, page, perPage int) (*SpecListResponse, error) {
+	path := c.projectPath("/specs")
+
+	params := url.Values{}
+	if status != "" {
+		params.Set("status", status)
+	}
+	params.Set("page", strconv.Itoa(page))
+	params.Set("per_page", strconv.Itoa(perPage))
+
+	if len(params) > 0 {
+		path = path + "?" + params.Encode()
+	}
+
+	req, err := c.newRequest(ctx, http.MethodGet, path, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.http.Do(req)
+	if err != nil {
+		if isConnectionRefused(err) {
+			return nil, ErrServerNotRunning
+		}
+		return nil, fmt.Errorf("list specs failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, parseErrorResponse(resp)
+	}
+
+	var paginatedResp paginatedSpecResponse
+	if err := json.NewDecoder(resp.Body).Decode(&paginatedResp); err != nil {
+		return nil, fmt.Errorf("failed to decode specs response: %w", err)
+	}
+
+	return &SpecListResponse{
+		Data: paginatedResp.Data,
+		Pagination: &Pagination{
+			Page:       paginatedResp.Pagination.Page,
+			PerPage:    paginatedResp.Pagination.PerPage,
+			Total:      paginatedResp.Pagination.Total,
+			TotalPages: paginatedResp.Pagination.TotalPages,
+		},
+	}, nil
+}
+
+// ListReadySpecs lists specs that are ready to be worked on (no blocking dependencies).
+func (c *Client) ListReadySpecs(ctx context.Context, page, perPage int) (*SpecListResponse, error) {
+	path := c.projectPath("/specs/ready")
+
+	params := url.Values{}
+	params.Set("page", strconv.Itoa(page))
+	params.Set("per_page", strconv.Itoa(perPage))
+	path = path + "?" + params.Encode()
+
+	req, err := c.newRequest(ctx, http.MethodGet, path, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.http.Do(req)
+	if err != nil {
+		if isConnectionRefused(err) {
+			return nil, ErrServerNotRunning
+		}
+		return nil, fmt.Errorf("list ready specs failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, parseErrorResponse(resp)
+	}
+
+	var paginatedResp paginatedSpecResponse
+	if err := json.NewDecoder(resp.Body).Decode(&paginatedResp); err != nil {
+		return nil, fmt.Errorf("failed to decode specs response: %w", err)
+	}
+
+	return &SpecListResponse{
+		Data: paginatedResp.Data,
+		Pagination: &Pagination{
+			Page:       paginatedResp.Pagination.Page,
+			PerPage:    paginatedResp.Pagination.PerPage,
+			Total:      paginatedResp.Pagination.Total,
+			TotalPages: paginatedResp.Pagination.TotalPages,
+		},
+	}, nil
+}
+
+// ListSpecTasks lists tasks belonging to a spec.
+func (c *Client) ListSpecTasks(ctx context.Context, specID string, page, perPage int) (*TaskListResponse, error) {
+	path := c.projectPath("/specs/" + specID + "/tasks")
+
+	params := url.Values{}
+	params.Set("page", strconv.Itoa(page))
+	params.Set("per_page", strconv.Itoa(perPage))
+	path = path + "?" + params.Encode()
+
+	req, err := c.newRequest(ctx, http.MethodGet, path, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.http.Do(req)
+	if err != nil {
+		if isConnectionRefused(err) {
+			return nil, ErrServerNotRunning
+		}
+		return nil, fmt.Errorf("list spec tasks failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, parseErrorResponse(resp)
+	}
+
+	var paginatedResp paginatedTaskResponse
+	if err := json.NewDecoder(resp.Body).Decode(&paginatedResp); err != nil {
+		return nil, fmt.Errorf("failed to decode tasks response: %w", err)
+	}
+
+	return &TaskListResponse{
+		Data: paginatedResp.Data,
+		Pagination: &Pagination{
+			Page:       paginatedResp.Pagination.Page,
+			PerPage:    paginatedResp.Pagination.PerPage,
+			Total:      paginatedResp.Pagination.Total,
+			TotalPages: paginatedResp.Pagination.TotalPages,
+		},
+	}, nil
+}
+
+// UpdateSpec updates a spec.
+func (c *Client) UpdateSpec(ctx context.Context, id string, updates SpecUpdates) (*Spec, error) {
+	body := updateSpecRequest{
+		Title:       updates.Title,
+		Description: updates.Description,
+	}
+
+	req, err := c.newJSONRequest(ctx, http.MethodPatch, c.projectPath("/specs/"+id), body)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.http.Do(req)
+	if err != nil {
+		if isConnectionRefused(err) {
+			return nil, ErrServerNotRunning
+		}
+		return nil, fmt.Errorf("update spec failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, parseErrorResponse(resp)
+	}
+
+	var spec Spec
+	if err := json.NewDecoder(resp.Body).Decode(&spec); err != nil {
+		return nil, fmt.Errorf("failed to decode spec response: %w", err)
+	}
+
+	return &spec, nil
+}
+
+// DeleteSpec deletes a spec.
+func (c *Client) DeleteSpec(ctx context.Context, id string) error {
+	req, err := c.newRequest(ctx, http.MethodDelete, c.projectPath("/specs/"+id), nil)
+	if err != nil {
+		return err
+	}
+
+	resp, err := c.http.Do(req)
+	if err != nil {
+		if isConnectionRefused(err) {
+			return ErrServerNotRunning
+		}
+		return fmt.Errorf("delete spec failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusNoContent {
+		return parseErrorResponse(resp)
+	}
+
+	return nil
+}
+
+// CancelSpec cancels a spec.
+func (c *Client) CancelSpec(ctx context.Context, id string) (*Spec, error) {
+	req, err := c.newRequest(ctx, http.MethodPost, c.projectPath("/specs/"+id+"/cancel"), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.http.Do(req)
+	if err != nil {
+		if isConnectionRefused(err) {
+			return nil, ErrServerNotRunning
+		}
+		return nil, fmt.Errorf("cancel spec failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, parseErrorResponse(resp)
+	}
+
+	var spec Spec
+	if err := json.NewDecoder(resp.Body).Decode(&spec); err != nil {
+		return nil, fmt.Errorf("failed to decode spec response: %w", err)
+	}
+
+	return &spec, nil
+}
+
+// ReopenSpec reopens a cancelled spec.
+func (c *Client) ReopenSpec(ctx context.Context, id string) (*Spec, error) {
+	req, err := c.newRequest(ctx, http.MethodPost, c.projectPath("/specs/"+id+"/reopen"), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.http.Do(req)
+	if err != nil {
+		if isConnectionRefused(err) {
+			return nil, ErrServerNotRunning
+		}
+		return nil, fmt.Errorf("reopen spec failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, parseErrorResponse(resp)
+	}
+
+	var spec Spec
+	if err := json.NewDecoder(resp.Body).Decode(&spec); err != nil {
+		return nil, fmt.Errorf("failed to decode spec response: %w", err)
+	}
+
+	return &spec, nil
+}
+
+// AddSpecDependency adds a dependency between specs.
+func (c *Client) AddSpecDependency(ctx context.Context, childID, parentID string) error {
+	body := addSpecDependencyRequest{
+		ParentID: parentID,
+	}
+
+	req, err := c.newJSONRequest(ctx, http.MethodPost, c.projectPath("/specs/"+childID+"/deps"), body)
+	if err != nil {
+		return err
+	}
+
+	resp, err := c.http.Do(req)
+	if err != nil {
+		if isConnectionRefused(err) {
+			return ErrServerNotRunning
+		}
+		return fmt.Errorf("add spec dependency failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusNoContent {
+		return parseErrorResponse(resp)
+	}
+
+	return nil
+}
+
+// RemoveSpecDependency removes a dependency between specs.
+func (c *Client) RemoveSpecDependency(ctx context.Context, childID, parentID string) error {
+	req, err := c.newRequest(ctx, http.MethodDelete, c.projectPath("/specs/"+childID+"/deps/"+parentID), nil)
+	if err != nil {
+		return err
+	}
+
+	resp, err := c.http.Do(req)
+	if err != nil {
+		if isConnectionRefused(err) {
+			return ErrServerNotRunning
+		}
+		return fmt.Errorf("remove spec dependency failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusNoContent {
+		return parseErrorResponse(resp)
+	}
+
+	return nil
+}
+
+// ListSpecDependencies lists dependencies for a spec.
+func (c *Client) ListSpecDependencies(ctx context.Context, specID string) ([]SpecDependency, error) {
+	req, err := c.newRequest(ctx, http.MethodGet, c.projectPath("/specs/"+specID+"/deps"), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.http.Do(req)
+	if err != nil {
+		if isConnectionRefused(err) {
+			return nil, ErrServerNotRunning
+		}
+		return nil, fmt.Errorf("list spec dependencies failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, parseErrorResponse(resp)
+	}
+
+	var deps []SpecDependency
+	if err := json.NewDecoder(resp.Body).Decode(&deps); err != nil {
+		return nil, fmt.Errorf("failed to decode spec dependencies response: %w", err)
+	}
+
+	return deps, nil
+}
+
+// =============================================================================
 // Helper Methods
 // =============================================================================
 
@@ -557,7 +952,7 @@ func (c *Client) newJSONRequest(ctx context.Context, method, path string, body i
 var _ interface {
 	Health(ctx context.Context) error
 	ListProjects(ctx context.Context) ([]string, error)
-	CreateTask(ctx context.Context, title, description string, priority int, parentID string) (*domain.Task, error)
+	CreateTask(ctx context.Context, title, description string, priority int, parentID, specID string) (*domain.Task, error)
 	GetTask(ctx context.Context, id string) (*domain.Task, error)
 	ListTasks(ctx context.Context, status string, page, perPage int) (*TaskListResponse, error)
 	ListReadyTasks(ctx context.Context, page, perPage int) (*TaskListResponse, error)
